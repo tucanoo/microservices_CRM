@@ -1,0 +1,66 @@
+spring.config.import: "optional:configserver:"
+
+spring:
+  application.name: gateway
+  cloud.config:
+    failFast: true
+    retry:
+      initialInterval: 3000
+      multiplier: 1.3
+      maxInterval: 10000
+      maxAttempts: 20
+    uri: http://localhost:8888
+
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:7002
+
+  cloud:
+    config:
+      enabled: false
+    gateway:
+      routes:
+        - id: oauth2-server
+          uri: http://localhost:7002
+          predicates:
+            - Path=/oauth2/**
+
+        - id: oauth2-login
+          uri: http://localhost:7002
+          predicates:
+            - Path=/login/**
+
+        - id: oauth2-login-subpath
+          uri: http://localhost:7002
+          predicates:
+            - Path=/login
+
+        - id: oauth2-error
+          uri: http://localhost:7002
+          predicates:
+            - Path=/error/**
+
+        - id: customer
+          uri: http://localhost:7001
+          predicates:
+            - Path=/customer/**
+
+        - id: user
+          uri: http://localhost:7002
+          predicates:
+            - Path=/user/**
+
+logging:
+  level:
+    root: DEBUG
+---
+spring.config.activate.on-profile: docker
+spring:
+  cloud:
+    config:
+      enabled: true
+      uri: http://centralised-config:8888
+

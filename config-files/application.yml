@@ -1,0 +1,25 @@
+app:
+  eureka-server: localhost
+  auth-server: localhost
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: "http://${app.eureka-server}:8761/eureka/"
+    initialInstanceInfoReplicationIntervalSeconds: 5
+    registryFetchIntervalSeconds: 5
+  instance:
+    leaseRenewalIntervalInSeconds: 5
+    leaseExpirationDurationInSeconds: 5
+
+# Distributed tracing config
+management.tracing.enabled: false
+management.zipkin.tracing.endpoint: http://zipkin-server:9411/api/v2/spans
+management.tracing.sampling.probability: 1.0
+logging.pattern.level: "%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]"
+---
+spring.config.activate.on-profile: docker
+management.tracing.enabled: true
+app:
+  eureka-server: service-discovery
+  auth-server: user-service

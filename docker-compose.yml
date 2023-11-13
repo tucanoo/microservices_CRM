@@ -1,0 +1,72 @@
+version: '2.1'
+
+services:
+  user-service:
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - REDIRECT_URL=http://localhost
+    build: microservices/user-service
+    mem_limit: 512m
+#    ports:
+#      - "7002:7002"
+    healthcheck:
+      test: [ "CMD", "curl", "-fs", "http://localhost:7002/actuator/health" ]
+      interval: 5s
+      timeout: 2s
+      retries: 60
+
+  customer-service:
+    build: microservices/customer-service
+    mem_limit: 512m
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+
+  service-discovery:
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    build: service-discovery
+    mem_limit: 512m
+    ports:
+      - "8761:8761"
+
+  gateway:
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    build: gateway
+    mem_limit: 512m
+    ports:
+      - "8080:8080"
+    depends_on:
+      user-service:
+        condition: service_healthy
+
+  centralised-config:
+    build: centralised-config
+    mem_limit: 512m
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker,native
+    volumes:
+      - ./config-files:/config-files
+#    ports:
+#      - "8888:8888"
+
+  front-end:
+    build:
+      context: frontend
+      dockerfile: Dockerfile
+      args:
+        GATEWAY_URL: http://localhost:8080
+        VITE_REDIRECT_URL: http://localhost
+    ports:
+      - "80:80"
+    depends_on:
+      - gateway
+
+  zipkin-server:
+    image: openzipkin/zipkin:2.24.3
+    restart: always
+    mem_limit: 1024m
+    environment:
+      - STORAGE_TYPE=mem
+    ports:
+      - 9411:9411

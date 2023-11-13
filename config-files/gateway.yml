@@ -1,0 +1,88 @@
+server.port: 8080
+
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://user-service:7002
+
+  cloud:
+    gateway:
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
+      globalcors:
+        corsConfigurations:
+          '[/**]':
+            allowedOrigins: "*"
+            allowedMethods: "*"
+            allowedHeaders: "*"
+      routes:
+        - id: config-server
+          uri: ${spring.cloud.config.uri}
+          predicates:
+            - Path=/config/**
+          filters:
+            - RewritePath=/config/(?<segment>.*), /$\{segment}
+
+        - id: oauth2-server
+          uri: lb://user-service
+          predicates:
+            - Path=/oauth2/**
+
+        - id: oauth2-login
+          uri: lb://user-service
+          predicates:
+            - Path=/login/**
+
+        - id: oauth2-login-subpath
+          uri: lb://user-service
+          predicates:
+            - Path=/login
+
+        - id: oauth2-error
+          uri: lb://user-service
+          predicates:
+            - Path=/error/**
+
+        - id: customer
+          uri: lb://customer-service
+          predicates:
+            - Path=/customer/**
+
+        - id: user
+          uri: lb://user-service
+          predicates:
+            - Path=/user/**
+
+        - id: eureka-api
+          uri: http://${app.eureka-server}:8761
+          predicates:
+            - Path=/eureka/api/{segment}
+          filters:
+            - SetPath=/eureka/{segment}
+
+        - id: eureka-web-start
+          uri: http://${app.eureka-server}:8761
+          predicates:
+            - Path=/eureka/web
+          filters:
+            - SetPath=/
+
+        - id: eureka-web-other
+          uri: http://${app.eureka-server}:8761
+          predicates:
+            - Path=/eureka/**
+
+
+
+management.endpoint.gateway.enabled: true
+eureka:
+  client:
+    enabled: true
+
+logging:
+  level:
+    root: INFO
+#    org.springframework.security: TRACE
+#    org.springframework.security.oauth2: TRACE

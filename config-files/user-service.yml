@@ -1,0 +1,47 @@
+server.port: 7002
+server.forward-headers-strategy: framework
+logging:
+  level:
+    root: info
+#    com.tucanoo: debug
+#    org.springframework.security: debug
+
+spring:
+  application.name: user-service
+  jpa:
+    hibernate:
+      ddl-auto: create
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:7002
+
+app.eureka-server: localhost
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://${app.eureka-server}:8761/eureka/
+    initialInstanceInfoReplicationIntervalSeconds: 5
+    registryFetchIntervalSeconds: 5
+    enabled: false
+  instance:
+    leaseRenewalIntervalInSeconds: 5
+    leaseExpirationDurationInSeconds: 5
+
+---
+spring.config.activate.on-profile: docker
+server.port: 7002
+app.eureka-server: service-discovery
+
+eureka:
+  client:
+    enabled: true
+
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:7002
